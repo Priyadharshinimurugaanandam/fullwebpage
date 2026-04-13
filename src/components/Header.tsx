@@ -23,7 +23,7 @@ const Header: React.FC<{ user: any }> = ({ user }) => {
               alt="MISSO System Insights Logo" 
               className="w-9 h-9 mr-3 object-contain rounded-md shadow-sm"
               onError={(e) => {
-                e.currentTarget.src = '/Image.png';
+                e.currentTarget.src = '/holder.png'; // Fallback image if not found
               }}
             />
             <h1 className="text-2xl font-bold text-[#00938e] uppercase tracking-wider">
