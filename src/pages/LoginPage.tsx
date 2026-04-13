@@ -98,7 +98,7 @@ blob:https://teams.microsoft.com/66478634-c853-4346-99c1-9788d2351507
       <div className="absolute inset-0 bg-black/50" />
       <div className="relative z-10 bg-white backdrop-blur-sm rounded-3xl shadow-3xl w-full max-w-xl border border-white/30 overflow-hidden">
         <div className="bg-gradient-to-r from-[#00938e] to-teal-600 text-white p-14 text-center">
-          <h1 className="text-6xl font-bold">MISSO</h1>
+          <h1 className="text-6xl font-bold">MIZZO</h1>
           <p className="text-xl mt-3 opacity-90">Robotic Insights Platform</p>
         </div>
 
@@ -117,7 +117,7 @@ blob:https://teams.microsoft.com/66478634-c853-4346-99c1-9788d2351507
           <form onSubmit={handleLogin} className="space-y-8">
             {mode === 'surgeon' && (
               <div>
-                <label className="block text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <label className="block text-lg font-semibold text-gray-800 mb-4 items-center gap-2">
                   <User className="text-[#00938e]" size={22} /> Select Your Name
                 </label>
                 {surgeons.length === 0 ? (
@@ -134,7 +134,7 @@ blob:https://teams.microsoft.com/66478634-c853-4346-99c1-9788d2351507
             )}
 
             <div>
-              <label className="block text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <label className="block text-lg font-semibold text-gray-800 mb-4 items-center gap-2">
                 <Lock className="text-[#00938e]" size={22} /> Password
               </label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full px-6 py-5 text-lg border-2 border-gray-300 rounded-xl focus:border-[#00938e] focus:ring-4 focus:ring-teal-200" />
@@ -148,7 +148,7 @@ blob:https://teams.microsoft.com/66478634-c853-4346-99c1-9788d2351507
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-10">
-            Powered by <span className="font-bold text-[#00938e]">MISSO System Insights</span>
+            Powered by <span className="font-bold text-[#00938e]">MERIL</span>
           </p>
         </div>
       </div>

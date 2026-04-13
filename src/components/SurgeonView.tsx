@@ -98,7 +98,7 @@ const SurgeonView: React.FC = () => {
     }));
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full -ml-6">
       <div className="lg:col-span-3">
         <div className="space-y-4">
           <div className="bg-white border-2 border-[#00938e] rounded-lg p-6 shadow-sm min-h-[280px]">
@@ -200,7 +200,7 @@ const SurgeonView: React.FC = () => {
               ) : (
                 <p className="text-sm text-gray-600">No instruments used.</p>
               )}
-              <div className="mt-4 pt-3 border-t border-gray-200">
+              {/* <div className="mt-4 pt-3 border-t border-gray-200">
                 <h4 className="text-sm font-semibold text-[#00938e] uppercase tracking-wide mb-2">
                   Clutch Usage
                 </h4>
@@ -214,7 +214,7 @@ const SurgeonView: React.FC = () => {
                 ) : (
                   <p className="text-sm text-gray-600">No clutches used.</p>
                 )}
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

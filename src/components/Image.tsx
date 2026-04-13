@@ -18,7 +18,7 @@ const Image: React.FC<Props> = ({ type, name, className, alt }) => {
       alt={alt || name}
       className={className}
       onError={(e) => {
-        e.currentTarget.src = 'public/instruments/monopolar_cautery_hook.png';
+        e.currentTarget.src = 'public/placeholder.png';
       }}
     />
   );

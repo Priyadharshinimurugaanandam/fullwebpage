@@ -26,7 +26,7 @@ function App() {
       {/* MAIN CONTENT — PROPER SPACING */}
       <main className={isSupport 
         ? "ml-64 pt-20 px-6" 
-        : "ml-80 pt-20 px-6"  /* 80 = w-80 sidebar width */
+        : "ml-80 pt-20 px-1"  /* 80 = w-80 sidebar width */
       }>
         <Dashboard user={user} />
       </main>

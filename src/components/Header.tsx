@@ -27,7 +27,7 @@ const Header: React.FC<{ user: any }> = ({ user }) => {
               }}
             />
             <h1 className="text-2xl font-bold text-[#00938e] uppercase tracking-wider">
-              MISSO SYSTEM INSIGHTS
+              MIZZO SYSTEM INSIGHTS
             </h1>
           </div>
 

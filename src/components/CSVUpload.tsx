@@ -27,7 +27,7 @@ const CSVUpload: React.FC = () => {
     formData.append('file', file);
 
     try {
-      await axios.post('http://localhost:8000/upload/json', formData);
+      await axios.post('http://localhost:8081/upload/json', formData);
       showNotification('Uploaded successfully!');
       setTimeout(() => window.location.reload(), 1500);
     } catch (err: any) {
