@@ -18,7 +18,7 @@ const Image: React.FC<Props> = ({ type, name, className, alt }) => {
       alt={alt || name}
       className={className}
       onError={(e) => {
-        e.currentTarget.src = 'public/holder.png'; // Fallback image if not found
+        e.currentTarget.src = '/holder.png'; // Fallback image if not found
       }}
     />
   );
