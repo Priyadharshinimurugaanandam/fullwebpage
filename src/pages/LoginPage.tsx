@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { User, Lock, Shield, Loader2 } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
+
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'support' | 'surgeon'>('surgeon');
@@ -10,6 +12,7 @@ export default function LoginPage() {
   const [surgeons, setSurgeons] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -116,33 +119,59 @@ blob:https://teams.microsoft.com/66478634-c853-4346-99c1-9788d2351507
 
           <form onSubmit={handleLogin} className="space-y-8">
             {mode === 'surgeon' && (
-              <div>
-                <label className="block text-lg font-semibold text-gray-800 mb-4 items-center gap-2">
-                  <User className="text-[#00938e]" size={22} /> Select Your Name
-                </label>
-                {surgeons.length === 0 ? (
-                  <div className="text-center py-12 bg-red-50 rounded-2xl border-2 border-red-200">
-                    <p className="text-red-700 font-medium">No surgeons found</p>
-                  </div>
-                ) : (
-                  <select value={selectedSurgeon} onChange={e => setSelectedSurgeon(e.target.value)} required className="w-full px-6 py-5 text-lg border-2 border-[#00938e] rounded-xl focus:ring-4 focus:ring-teal-200 bg-white">
-                    <option value="">Choose Surgeon</option>
-                    {surgeons.map(n => <option key={n} value={n}>{n}</option>)}
-                  </select>
-                )}
-              </div>
+<div className="relative">
+  <select
+    value={selectedSurgeon}
+    onChange={e => setSelectedSurgeon(e.target.value)}
+    required
+    className="appearance-none w-full px-6 py-2 pr-14 text-lg border-2 border-[#00938e] rounded-xl focus:ring-4 focus:ring-teal-200 bg-white"
+  >
+    <option value="">Choose Surgeon</option>
+    {surgeons.map(n => (
+      <option key={n} value={n}>{n}</option>
+    ))}
+  </select>
+
+  {/* Custom Arrow */}
+  <div className="pointer-events-none absolute inset-y-0 right-5 flex items-center">
+    <svg
+      className="w-5 h-5 text-gray-600"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
+      <path d="M19 9l-7 7-7-7" />
+    </svg>
+  </div>
+</div>
             )}
 
-            <div>
-              <label className="block text-lg font-semibold text-gray-800 mb-4 items-center gap-2">
-                <Lock className="text-[#00938e]" size={22} /> Password
-              </label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full px-6 py-5 text-lg border-2 border-gray-300 rounded-xl focus:border-[#00938e] focus:ring-4 focus:ring-teal-200" />
-            </div>
+<div className="relative">
+  <label className="block text-lg font-semibold text-gray-800 mb-2 items-center gap-2">
+    <Lock className="text-[#00938e]" size={22} /> Password
+  </label>
+
+  <input
+    type={showPassword ? 'text' : 'password'}
+    value={password}
+    onChange={e => setPassword(e.target.value)}
+    required
+    className="w-full px-6 py-2 pr-14 text-lg border-2 border-gray-300 rounded-xl focus:border-[#00938e] focus:ring-4 focus:ring-teal-200"
+  />
+
+  <button
+    type="button"
+    onClick={() => setShowPassword(prev => !prev)}
+    className="absolute right-5 top-[70px] text-gray-500 hover:text-[#00938e]"
+  >
+    {showPassword ? <EyeOff size={24} /> : <Eye size={24} />}
+  </button>
+</div>
 
             {error && <div className="bg-red-100 border-2 border-red-400 text-red-700 p-5 rounded-xl text-center font-semibold">{error}</div>}
 
-            <button type="submit" disabled={loading || (mode === 'surgeon' && !selectedSurgeon)} className="w-full bg-gradient-to-r from-[#00938e] to-teal-600 text-white py-6 rounded-xl text-2xl font-bold hover:scale-105 transition-all disabled:opacity-50 flex items-center justify-center gap-3">
+            <button type="submit" disabled={loading || (mode === 'surgeon' && !selectedSurgeon)} className="w-full bg-gradient-to-r from-[#00938e] to-teal-600 text-white py-4 rounded-xl text-2xl font-bold hover:scale-105 transition-all disabled:opacity-50 flex items-center justify-center gap-3">
               {loading ? <>Logging in...</> : 'Enter Dashboard'}
             </button>
           </form>

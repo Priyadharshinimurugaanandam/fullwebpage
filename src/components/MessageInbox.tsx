@@ -1,7 +1,7 @@
 // src/components/MessageInbox.tsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Send, MessageCircle, Bell } from 'lucide-react';
+import { Send, MessageCircle } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -21,11 +21,9 @@ export default function MessageInbox({ currentUser }: { currentUser: any }) {
   const [replyText, setReplyText] = useState('');
   const isSupport = currentUser?.isSupport;
 
-  // Load messages
   useEffect(() => {
     loadMessages();
 
-    // Real-time listener
     const channel = supabase
       .channel('messages')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
@@ -42,14 +40,53 @@ export default function MessageInbox({ currentUser }: { currentUser: any }) {
         .from('messages')
         .select('*')
         .order('sent_at', { ascending: false });
+
       setMessages(data || []);
+
+      if (data) {
+        const unseenIds = data
+          .filter(m => m.status === 'pending')
+          .map(m => m.id);
+
+        if (unseenIds.length > 0) {
+          await supabase
+            .from('messages')
+            .update({ status: 'pending_seen' })
+            .in('id', unseenIds);
+
+          // ✅ Update local state immediately so badge clears
+          setMessages(prev =>
+            prev.map(m => unseenIds.includes(m.id) ? { ...m, status: 'pending_seen' } : m)
+          );
+        }
+      }
+
     } else {
       const { data } = await supabase
         .from('messages')
         .select('*')
         .eq('surgeon_name', currentUser.username)
         .order('sent_at', { ascending: false });
+
       setMessages(data || []);
+
+      if (data) {
+        const unseenIds = data
+          .filter(m => m.status === 'replied')
+          .map(m => m.id);
+
+        if (unseenIds.length > 0) {
+          await supabase
+            .from('messages')
+            .update({ status: 'seen' })
+            .in('id', unseenIds);
+
+          // ✅ Update local state immediately so badge clears
+          setMessages(prev =>
+            prev.map(m => unseenIds.includes(m.id) ? { ...m, status: 'seen' } : m)
+          );
+        }
+      }
     }
   };
 
@@ -78,15 +115,25 @@ export default function MessageInbox({ currentUser }: { currentUser: any }) {
     setReplyTo(null);
   };
 
-  const unreadCount = messages.filter(m => 
-    isSupport ? m.status === 'pending' : (m.status === 'replied' && !m.is_read_by_surgeon)
+  // ✅ Now correctly reflects local state
+  const unreadCount = messages.filter(m =>
+    isSupport
+      ? m.status === 'pending'
+      : m.status === 'replied'
   ).length;
 
   return (
     <div className="bg-white rounded-2xl shadow-xl p-6 max-w-4xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <MessageCircle className="text-[#00938e]" size={32} />
-        <h2 className="text-3xl font-bold text-gray-800">Messages {unreadCount > 0 && <span className="bg-red-500 text-white text-sm px-3 py-1 rounded-full">{unreadCount}</span>}</h2>
+        <h2 className="text-3xl font-bold text-gray-800">
+          Messages{' '}
+          {unreadCount > 0 && (
+            <span className="bg-red-500 text-white text-sm px-3 py-1 rounded-full">
+              {unreadCount}
+            </span>
+          )}
+        </h2>
       </div>
 
       {/* Send Message (Surgeon Only) */}
@@ -114,7 +161,16 @@ export default function MessageInbox({ currentUser }: { currentUser: any }) {
           <p className="text-center text-gray-500 py-10">No messages yet</p>
         ) : (
           messages.map(msg => (
-            <div key={msg.id} className={`p-5 rounded-xl border-2 ${msg.status === 'pending' && !isSupport ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200'} ${msg.status === 'replied' && !isSupport && !msg.is_read_by_surgeon ? 'border-green-400 bg-green-50' : ''}`}>
+            <div
+              key={msg.id}
+              className={`p-5 rounded-xl border-2 ${
+                msg.status === 'pending' || msg.status === 'pending_seen'
+                  ? 'border-yellow-400 bg-yellow-50'
+                  : msg.status === 'replied'
+                  ? 'border-green-400 bg-green-50'
+                  : 'border-gray-200'
+              }`}
+            >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <p className="font-bold text-[#00938e]">{msg.surgeon_name}</p>
@@ -126,7 +182,7 @@ export default function MessageInbox({ currentUser }: { currentUser: any }) {
                     </div>
                   )}
                 </div>
-                {isSupport && msg.status === 'pending' && (
+                {isSupport && (msg.status === 'pending' || msg.status === 'pending_seen') && (
                   <button
                     onClick={() => setReplyTo(msg.id)}
                     className="ml-4 bg-[#F4BB44] text-white px-4 py-2 rounded-lg hover:shadow-lg"

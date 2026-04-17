@@ -1,7 +1,7 @@
-// src/components/MessageModal.tsx   ← Correct filename
+// src/components/MessageModal.tsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Send, X, MessageCircle } from 'lucide-react';   // ← Added MessageCircle
+import { Send, X, MessageCircle } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -36,6 +36,44 @@ export default function MessageModal({ user, onClose }: { user: any; onClose: ()
 
     const { data } = await query;
     setMessages(data || []);
+
+    // ✅ Mark as seen for surgeon
+    if (!isSupport && data) {
+      const unseenIds = data
+        .filter(m => m.status === 'replied')
+        .map(m => m.id);
+
+      if (unseenIds.length > 0) {
+        await supabase
+          .from('messages')
+          .update({ status: 'seen' })
+          .in('id', unseenIds);
+
+        // ✅ Update local state immediately so badge clears
+        setMessages(prev =>
+          prev.map(m => unseenIds.includes(m.id) ? { ...m, status: 'seen' } : m)
+        );
+      }
+    }
+
+    // ✅ Mark as seen for support
+    if (isSupport && data) {
+      const unseenIds = data
+        .filter(m => m.status === 'pending')
+        .map(m => m.id);
+
+      if (unseenIds.length > 0) {
+        await supabase
+          .from('messages')
+          .update({ status: 'pending_seen' })
+          .in('id', unseenIds);
+
+        // ✅ Update local state immediately so badge clears
+        setMessages(prev =>
+          prev.map(m => unseenIds.includes(m.id) ? { ...m, status: 'pending_seen' } : m)
+        );
+      }
+    }
   };
 
   const sendMessage = async () => {
@@ -79,7 +117,14 @@ export default function MessageModal({ user, onClose }: { user: any; onClose: ()
             <p className="text-center text-gray-500 py-10">No messages yet</p>
           ) : (
             messages.map(msg => (
-              <div key={msg.id} className={`p-5 rounded-xl border-2 ${msg.status === 'pending' ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200'}`}>
+              <div
+                key={msg.id}
+                className={`p-5 rounded-xl border-2 ${
+                  msg.status === 'pending' || msg.status === 'pending_seen'
+                    ? 'border-yellow-400 bg-yellow-50'
+                    : 'border-gray-200'
+                }`}
+              >
                 <p className="font-bold text-[#00938e]">{msg.surgeon_name}</p>
                 <p className="mt-2">{msg.message}</p>
                 {msg.reply && (
@@ -88,14 +133,22 @@ export default function MessageModal({ user, onClose }: { user: any; onClose: ()
                     <p>{msg.reply}</p>
                   </div>
                 )}
-                {isSupport && msg.status === 'pending' && (
-                  <button onClick={() => setReplyTo(msg.id)} className="mt-3 bg-[#F4BB44] text-white px-4 py-2 rounded-lg text-sm">
+                {isSupport && (msg.status === 'pending' || msg.status === 'pending_seen') && (
+                  <button
+                    onClick={() => setReplyTo(msg.id)}
+                    className="mt-3 bg-[#F4BB44] text-white px-4 py-2 rounded-lg text-sm"
+                  >
                     Reply
                   </button>
                 )}
                 {replyTo === msg.id && (
                   <div className="mt-3">
-                    <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} className="w-full p-3 border rounded-lg" rows={3} />
+                    <textarea
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      className="w-full p-3 border rounded-lg"
+                      rows={3}
+                    />
                     <div className="flex gap-2 mt-2">
                       <button onClick={() => sendReply(msg.id)} className="bg-[#00938e] text-white px-4 py-2 rounded-lg">Send</button>
                       <button onClick={() => { setReplyTo(null); setReplyText(''); }} className="text-gray-600">Cancel</button>
