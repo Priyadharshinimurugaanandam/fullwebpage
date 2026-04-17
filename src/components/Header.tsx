@@ -1,54 +1,56 @@
+// src/components/Header.tsx
 import React, { useState, useEffect } from 'react';
 import MessageModal from './MessageModal';
-import { Mail } from 'lucide-react';
+import NotificationPanel from './NotificationPanel';
+import SupportNotificationPanel from './SupportNotificationPanel';
+import { Mail, Bell } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 const Header: React.FC<{ user: any }> = ({ user }) => {
   const [showInbox, setShowInbox] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   const handleLogout = () => {
     localStorage.removeItem('current_user');
     window.location.href = '/';
   };
 
-  // 🔔 Load unread messages
-  const loadUnread = async () => {
+  const loadUnreadMessages = async () => {
     let query;
-
     if (user?.isSupport) {
-      query = supabase
-        .from('messages')
-        .select('id')
-        .eq('status', 'pending'); // unread for support
+      query = supabase.from('messages').select('id').eq('status', 'pending');
     } else {
-      query = supabase
-        .from('messages')
-        .select('id')
+      query = supabase.from('messages').select('id')
         .eq('surgeon_name', user.username)
-        .eq('status', 'replied'); // unread for surgeon
+        .eq('status', 'replied');
     }
-
     const { data } = await query;
-    setUnreadCount(data?.length || 0);
+    setUnreadMessages(data?.length || 0);
   };
 
-  // 🔄 Realtime sync
+  const loadUnreadNotifications = async () => {
+    if (user?.isSupport) return; // support sends, doesn't receive
+    const { data } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('surgeon_name', user.username)
+      .eq('is_read', false);
+    setUnreadNotifications(data?.length || 0);
+  };
+
   useEffect(() => {
-    loadUnread();
+    loadUnreadMessages();
+    loadUnreadNotifications();
 
     const channel = supabase
-      .channel('messages-header')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'messages' },
-        () => loadUnread()
-      )
+      .channel('header-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadUnreadMessages)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, loadUnreadNotifications)
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   return (
@@ -58,13 +60,11 @@ const Header: React.FC<{ user: any }> = ({ user }) => {
 
           {/* LEFT: LOGO + TITLE */}
           <div className="flex items-center">
-            <img 
-              src="/placeholder.png" 
-              alt="MISSO System Insights Logo" 
+            <img
+              src="/placeholder.png"
+              alt="Logo"
               className="w-9 h-9 mr-3 object-contain rounded-md shadow-sm"
-              onError={(e) => {
-                e.currentTarget.src = '/holder.png';
-              }}
+              onError={(e) => { e.currentTarget.src = '/holder.png'; }}
             />
             <h1 className="text-2xl font-bold text-[#00938e] uppercase tracking-wider">
               MIZZO SYSTEM INSIGHTS
@@ -80,18 +80,31 @@ const Header: React.FC<{ user: any }> = ({ user }) => {
               <p className="font-bold text-gray-800 text-sm">{user.username}</p>
             </div>
 
-            {/* MESSAGE ICON */}
+            {/* 🔔 BELL — Surgeon: view notifications | Support: send notifications */}
+            <button
+              onClick={() => setShowNotifications(true)}
+              className="relative p-2.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-all hover:scale-110"
+              title={user?.isSupport ? 'Send Notification' : 'Notifications'}
+            >
+              <Bell size={22} className="text-[#00938e]" />
+              {/* Only show badge for surgeons */}
+              {!user?.isSupport && unreadNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center animate-pulse">
+                  {unreadNotifications}
+                </span>
+              )}
+            </button>
+
+            {/* ✉️ MESSAGE ICON */}
             <button
               onClick={() => setShowInbox(true)}
               className="relative p-2.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-all hover:scale-110"
               title="Messages"
             >
               <Mail size={22} className="text-[#00938e]" />
-
-              {/* 🔴 Dynamic Notification Badge */}
-              {unreadCount > 0 && (
+              {unreadMessages > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center animate-pulse">
-                  {unreadCount}
+                  {unreadMessages}
                 </span>
               )}
             </button>
@@ -113,9 +126,22 @@ const Header: React.FC<{ user: any }> = ({ user }) => {
           user={user}
           onClose={() => {
             setShowInbox(false);
-            loadUnread(); // 🔄 refresh badge immediately after closing
+            loadUnreadMessages();
           }}
         />
+      )}
+
+      {/* SURGEON: view notifications | SUPPORT: send notifications */}
+      {showNotifications && (
+        user?.isSupport
+          ? <SupportNotificationPanel onClose={() => setShowNotifications(false)} />
+          : <NotificationPanel
+              user={user}
+              onClose={() => {
+                setShowNotifications(false);
+                loadUnreadNotifications();
+              }}
+            />
       )}
     </>
   );

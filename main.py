@@ -1,4 +1,4 @@
-# main.py ← FINAL FIXED VERSION
+# main.py
 import os
 import json
 import logging
@@ -10,11 +10,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client
 from dotenv import load_dotenv
 
-# Load .env
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")  # Use service_role key
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise ValueError("Missing Supabase credentials")
@@ -23,10 +22,9 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI()
 
-# ADD THIS — ALLOW FRONTEND
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Or ["http://localhost:5173"]
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -84,7 +82,6 @@ def parse_json_events(events: List[Dict[str, Any]]) -> Dict[str, Any]:
         except Exception as e:
             logging.warning(f"Parse error: {e}")
 
-    # Finalize instruments
     if instruments:
         names = list(instruments.keys())
         durations = [instruments[n] for n in names]
@@ -92,6 +89,21 @@ def parse_json_events(events: List[Dict[str, Any]]) -> Dict[str, Any]:
         row["instruments_durations"] = ",".join(map(str, durations))
 
     return {k: v for k, v in row.items() if v != ""}
+
+
+def send_notification(surgeon_name: str, title: str, message: str, type: str):
+    """Insert a notification into Supabase for the surgeon."""
+    try:
+        supabase.table("notifications").insert({
+            "surgeon_name": surgeon_name,
+            "title": title,
+            "message": message,
+            "type": type,
+            "is_read": False
+        }).execute()
+    except Exception as e:
+        logging.warning(f"Notification insert failed: {e}")
+
 
 @app.post("/upload/json")
 async def upload_json(file: UploadFile = File(...)):
@@ -109,16 +121,22 @@ async def upload_json(file: UploadFile = File(...)):
     if not surgery.get("procedure_name") or not surgery.get("surgeon_name"):
         raise HTTPException(400, "Missing procedure or surgeon")
 
-    # INSERT INTO SUPABASE
+    # Insert surgery
     response = supabase.table("surgeries").insert(surgery).execute()
 
     if response.data:
+        # ✅ Auto notification to surgeon on file upload
+        send_notification(
+            surgeon_name=surgery["surgeon_name"],
+            title="New Procedure File Uploaded",
+            message=f"A new file for your procedure '{surgery['procedure_name']}' has been uploaded and is now available in your dashboard.",
+            type="file_upload"
+        )
         return {"message": "Success", "data": surgery}
     else:
         raise HTTPException(500, f"Supabase error: {response.error}")
 
-# Optional: CSV upload too
+
 @app.post("/upload/csv")
 async def upload_csv(file: UploadFile = File(...)):
-    # Just forward to Supabase (clean CSV)
     pass
